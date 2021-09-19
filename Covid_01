@@ -1,0 +1,137 @@
+-- 1
+-- Shows entire data:
+
+select *
+From [Portfolio Test 01]..CovidDeaths
+where continent is not null
+Order by date;
+
+
+-- 2.
+-- Shows Total Cases, New Cases, Total Deaths and Population of each country from Jan 2020 to Sept 2021:
+
+Select date, location, population, total_cases, new_cases, total_deaths
+From [Portfolio Test 01]..CovidDeaths
+Where continent is not null
+Order by 1,2
+For Json Auto
+
+
+-- 3.
+-- Shows total deaths to total cases percentage (Likelihood of dying due to Covid in each Country) from Jan 2020 to Sept 2021:
+
+Select date, location, total_cases, CONVERT(int, total_deaths) as total_deaths, (total_deaths/total_cases)*100 as death_percentage
+From [Portfolio Test 01]..CovidDeaths
+where continent is not null
+Order by location, date
+For Json Auto;
+
+-- 4.
+---- Shows Cases per Population and Cases per Million for each country (what percentage of population got Covid) from Jan 2020 to Sept 2021:
+
+Select date, location, population, total_cases, Cast((total_cases/population)*100 as float) as Cases_Per_Population_percentage, ((total_cases/population) * 1000000) as Cases_Per_Million
+From [Portfolio Test 01]..CovidDeaths
+Where continent is not null and total_cases is not null
+Order by location, date, total_cases desc;
+
+
+-- 5.
+-- Shows which country has highest infection rate compared to population
+
+Select location, population, Max(total_cases) as Highest_Infection_Count, (Max(total_cases)/population) as Infected_population_percentatge
+From [Portfolio Test 01]..CovidDeaths
+Where continent is not null
+Group by location, population
+Order by Infected_population_percentatge desc;
+
+-- 6.
+-- Shows which country has Highest Infection Rate per Million People from Jan 2020 to Sept 2021:
+
+Select location, population, Max(total_cases) as Total_Covid_Cases, ((Max(total_cases)/population) *1000000) as Covid_Cases_Per_Million_People
+From [Portfolio Test 01]..CovidDeaths
+Where continent is not null -- and (population > 1000000)
+Group by location, population
+Order by Covid_Cases_Per_Million_People desc;
+
+
+-- 7.
+-- Shows which Countries has Highest Death Count per Population from Jan 2020 to Sept 2021:
+
+Select location, Max(cast (total_deaths as int)) as TotalDeathCount 
+From [Portfolio Test 01]..CovidDeaths
+where continent is not null
+Group by location
+Order by TotalDeathCount desc
+
+
+-- 8. (TO DO: STRONG REASON WHY THIS IS NOT THE RIGHT WAY)
+-- Shows Continents with highest death count (Not perfect interpretation because North America exclude countries like Canada from total calculation or )
+
+Select continent, Max(cast (total_deaths as int)) as TotalDeathCount 
+From [Portfolio Test 01]..CovidDeaths
+where continent is not null
+Group by continent
+Order by TotalDeathCount desc
+
+
+-- 9. 
+-- Shows continents with Total Number of Deaths from Jan 2020 to Sept 2021:
+Select location, Max(cast (total_deaths as int)) as TotalDeathCount 
+From [Portfolio Test 01]..CovidDeaths
+where continent is null and location not in ('World', 'International', 'European Union')
+Group by location
+Order by TotalDeathCount desc
+
+
+-- 10.
+-- GLOBAL NUMBERS (Total Number of Covid Cases World Wide from January 2020 onwards) 
+-- Flawed Method: Because same dates covered multiple rows, thus shows unwanted data too
+
+Select date, MAX(total_cases) as TotalCases, Max(total_deaths) as TotalDeaths, (cast (total_deaths as int)/cast (total_cases as int))*100 as DeathsPerCases
+From [Portfolio Test 01]..CovidDeaths
+where continent is null and total_cases is not null
+Group by total_cases, date, total_deaths
+Order by date
+
+-- 11.
+-- GLOBAL NUMBERS (Total Number of Covid Cases, Covid Deaths and Death Per Total Cases World Wide from January 2020 onwards)
+
+Select CovidDeaths.date, CovidDeaths.total_cases, total_deaths, (total_deaths/CovidDeaths.total_cases) as DeathPerCases
+From [Portfolio Test 01]..CovidDeaths
+Inner Join (
+Select date, Max(total_cases) as Total_Cases
+From [Portfolio Test 01]..CovidDeaths
+Group by date
+)Total_Covid_Cases
+On Total_Covid_Cases.date =  CovidDeaths.date
+And Total_Covid_Cases.Total_Cases = CovidDeaths.total_cases
+Order by coviddeaths.date
+
+
+-- 12.
+-- GLOBAL NUMBERS (Total Number of NEW Covid Cases World Wide from January 2020 onwards)
+
+Select date, Sum(new_cases) as NewCases , Sum(Cast (new_deaths as int)) as NewDeaths
+From [Portfolio Test 01]..CovidDeaths
+Where continent is not null and total_cases is not null and location not like 'World'
+Group by date
+Order by 1
+
+-- 13.
+-- Vaccination Data
+
+Select * 
+From [Portfolio Test 01]..CovidVaccinations
+
+
+-- 14. 
+-- Joining CovidDeaths and CovidVaccination Data
+
+Select *
+From [Portfolio Test 01]..CovidDeaths as death
+Join [Portfolio Test 01]..CovidVaccinations as vaccination
+On death.location = vaccination.location
+and death.date = vaccination.date
+Order by death.date
+
+ 
